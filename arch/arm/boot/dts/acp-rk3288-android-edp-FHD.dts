@@ -41,43 +41,47 @@
 /dts-v1/;
 #include "acp-rk3288-android.dtsi"
 
-&route_lvds {
+&edp {
 	status = "okay";
 };
 
-&lvds {
-	status = "okay";
-};
-
-&lvds_panel {
-	status = "okay";
-	compatible ="simple-panel";
+&edp_panel {
+	compatible = "simple-panel";
 	backlight = <&backlight>;
-	bus-format = <MEDIA_BUS_FMT_RGB888_1X24>;
 	enable-gpios = <&gpio7 4 GPIO_ACTIVE_HIGH>;
-	enable-delay-ms = <10>;
+	enable-delay-ms = <120>;
+	pinctrl-0 = <&lcd_cs>;
 	power-supply = <&vcc_lcd>;
-	rockchip,data-mapping = "vesa";
-	rockchip,data-width = <24>;
-	rockchip,output = "lvds";
+	status = "okay";
 
-	display-timings {
+	disp_timings: display-timings {
 		native-mode = <&timing0>;
+
 		timing0: timing0 {
-			clock-frequency = <61000000>;
-			hactive = <1280>;
-			vactive = <800>;
-			hback-porch = <100>;
-			hfront-porch = <18>;
-			vback-porch = <8>;
+			clock-frequency = <152000000>;
+			hactive = <1920>;
+			vactive = <1080>;
+
+			hfront-porch = <48>;
+			hsync-len = <32>;
+			hback-porch = <250>;
+
 			vfront-porch = <6>;
-			hsync-len = <10>;
-			vsync-len = <2>;
+			vsync-len = <5>;
+			vback-porch = <41>;
+
 			hsync-active = <0>;
 			vsync-active = <0>;
 			de-active = <0>;
-			pixelclk-active = <0>;
+			pixelclk-active = <1>;
 		};
 	};
 };
 
+&edp_phy {
+	status = "okay";
+};
+
+&route_edp {
+	status = "okay";
+};

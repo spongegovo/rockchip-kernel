@@ -39,45 +39,25 @@
  */
 
 /dts-v1/;
-#include "acp-rk3288-android.dtsi"
+#include "acp-rk3288.dtsi"
+#include "acp-android.dtsi"
 
-&route_lvds {
+&dfi {
 	status = "okay";
 };
 
-&lvds {
+&dmc {
+	center-supply = <&vdd_cpu>;
+	vop-dclk-mode = <1>;
 	status = "okay";
 };
 
-&lvds_panel {
+&rockchip_suspend {
 	status = "okay";
-	compatible ="simple-panel";
-	backlight = <&backlight>;
-	bus-format = <MEDIA_BUS_FMT_RGB888_1X24>;
-	enable-gpios = <&gpio7 4 GPIO_ACTIVE_HIGH>;
-	enable-delay-ms = <10>;
-	power-supply = <&vcc_lcd>;
-	rockchip,data-mapping = "vesa";
-	rockchip,data-width = <24>;
-	rockchip,output = "lvds";
-
-	display-timings {
-		native-mode = <&timing0>;
-		timing0: timing0 {
-			clock-frequency = <61000000>;
-			hactive = <1280>;
-			vactive = <800>;
-			hback-porch = <100>;
-			hfront-porch = <18>;
-			vback-porch = <8>;
-			vfront-porch = <6>;
-			hsync-len = <10>;
-			vsync-len = <2>;
-			hsync-active = <0>;
-			vsync-active = <0>;
-			de-active = <0>;
-			pixelclk-active = <0>;
-		};
-	};
+	rockchip,pwm-regulator-config = <
+	(0
+	| PWM1_REGULATOR_EN
+	)
+	>;
 };
 

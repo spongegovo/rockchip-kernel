@@ -46,7 +46,7 @@
 };
 
 &lvds {
-	status = "okay";
+	status = "disable";
 };
 
 &lvds_panel {
@@ -60,6 +60,7 @@
 	rockchip,data-mapping = "vesa";
 	rockchip,data-width = <24>;
 	rockchip,output = "lvds";
+
 
 	display-timings {
 		native-mode = <&timing0>;
@@ -80,4 +81,5 @@
 		};
 	};
 };
+
 
