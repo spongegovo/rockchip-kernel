@@ -1059,6 +1059,7 @@ config VIDEO_GC8034
 config VIDEO_SC031GS
 	tristate "SmartSens SC031GS sensor support"
 	depends on VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API
+	select V4L2_FWNODE
 	default y
 	help
 	  Support for the Smartsens SC031GS sensor.
