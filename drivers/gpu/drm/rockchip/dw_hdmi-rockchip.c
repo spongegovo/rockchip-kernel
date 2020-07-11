@@ -54,8 +54,6 @@
 #define RK3328_HPD_3V			(BIT(8 + 16) | BIT(13 + 16))
 
 #define HIWORD_UPDATE(val, mask)	(val | (mask) << 16)
-#define RK_HDMI_COLORIMETRY_BT2020	(HDMI_COLORIMETRY_EXTENDED + \
-					 HDMI_EXTENDED_COLORIMETRY_BT2020)
 
 /* HDMI output pixel format */
 enum drm_hdmi_output_type {
@@ -709,7 +707,7 @@ dw_hdmi_rockchip_select_output(struct drm_connector_state *conn_state,
 
 	if ((*eotf > TRADITIONAL_GAMMA_HDR &&
 	     info->hdmi.hdr_panel_metadata.eotf & BIT(*eotf)) ||
-	    (hdmi->colorimetry == RK_HDMI_COLORIMETRY_BT2020 &&
+	    (hdmi->colorimetry == HDMI_EXTENDED_COLORIMETRY_BT2020 &&
 	     info->hdmi.colorimetry & (BIT(6) | BIT(7))))
 		*enc_out_encoding = V4L2_YCBCR_ENC_BT2020;
 	else if ((vic == 6) || (vic == 7) || (vic == 21) || (vic == 22) ||
@@ -894,7 +892,8 @@ static const struct drm_prop_enum_list drm_hdmi_output_enum_list[] = {
 
 static const struct drm_prop_enum_list colorimetry_enum_list[] = {
 	{ HDMI_COLORIMETRY_NONE, "None" },
-	{ RK_HDMI_COLORIMETRY_BT2020, "ITU_2020" },
+	{ HDMI_COLORIMETRY_EXTENDED + HDMI_EXTENDED_COLORIMETRY_BT2020,
+	  "ITU_2020" },
 };
 
 static void

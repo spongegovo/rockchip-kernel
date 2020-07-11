@@ -99,28 +99,24 @@ static void rk618_output_encoder_enable(struct drm_encoder *encoder)
 	if (output->funcs->pre_enable)
 		output->funcs->pre_enable(output);
 
-	if (output->panel)
-		drm_panel_prepare(output->panel);
+	drm_panel_prepare(output->panel);
 
 	if (output->funcs->enable)
 		output->funcs->enable(output);
 
-	if (output->panel)
-		drm_panel_enable(output->panel);
+	drm_panel_enable(output->panel);
 }
 
 static void rk618_output_encoder_disable(struct drm_encoder *encoder)
 {
 	struct rk618_output *output = encoder_to_output(encoder);
 
-	if (output->panel)
-		drm_panel_disable(output->panel);
+	drm_panel_disable(output->panel);
 
 	if (output->funcs->disable)
 		output->funcs->disable(output);
 
-	if (output->panel)
-		drm_panel_unprepare(output->panel);
+	drm_panel_unprepare(output->panel);
 
 	if (output->funcs->post_disable)
 		output->funcs->post_disable(output);
@@ -191,8 +187,7 @@ static void rk618_output_bridge_pre_enable(struct drm_bridge *bridge)
 	if (output->funcs->pre_enable)
 		output->funcs->pre_enable(output);
 
-	if (output->panel)
-		drm_panel_prepare(output->panel);
+	drm_panel_prepare(output->panel);
 }
 
 static void rk618_output_bridge_enable(struct drm_bridge *bridge)
@@ -202,16 +197,14 @@ static void rk618_output_bridge_enable(struct drm_bridge *bridge)
 	if (output->funcs->enable)
 		output->funcs->enable(output);
 
-	if (output->panel)
-		drm_panel_enable(output->panel);
+	drm_panel_enable(output->panel);
 }
 
 static void rk618_output_bridge_disable(struct drm_bridge *bridge)
 {
 	struct rk618_output *output = bridge_to_output(bridge);
 
-	if (output->panel)
-		drm_panel_disable(output->panel);
+	drm_panel_disable(output->panel);
 
 	if (output->funcs->disable)
 		output->funcs->disable(output);
@@ -221,8 +214,7 @@ static void rk618_output_bridge_post_disable(struct drm_bridge *bridge)
 {
 	struct rk618_output *output = bridge_to_output(bridge);
 
-	if (output->panel)
-		drm_panel_unprepare(output->panel);
+	drm_panel_unprepare(output->panel);
 
 	if (output->funcs->post_disable)
 		output->funcs->post_disable(output);
@@ -254,7 +246,7 @@ static const struct drm_bridge_funcs rk618_output_bridge_funcs = {
 int rk618_output_register(struct rk618_output *output)
 {
 	struct device *dev = output->dev;
-	struct device_node *endpoint, *remote = NULL, *port;
+	struct device_node *endpoint, *remote;
 	int ret;
 
 	output->dither_clk = devm_clk_get(dev, "dither");
@@ -278,26 +270,14 @@ int rk618_output_register(struct rk618_output *output)
 		return ret;
 	}
 
-	port = of_graph_get_port_by_id(dev->of_node, 1);
-	if (!port) {
-		dev_err(dev, "can't found port point.\n");
-		return -EINVAL;
+	endpoint = of_graph_get_endpoint_by_regs(dev->of_node, 1, -1);
+	if (!endpoint) {
+		dev_err(dev, "no valid endpoint\n");
+		return -ENODEV;
 	}
 
-	for_each_child_of_node(port, endpoint) {
-		remote = of_graph_get_remote_port_parent(endpoint);
-		if (!remote) {
-			dev_err(dev, "can't found panel node, please init!\n");
-			return -EINVAL;
-		}
-		if (!of_device_is_available(remote)) {
-			of_node_put(remote);
-			remote = NULL;
-			continue;
-		}
-		break;
-	}
-
+	remote = of_graph_get_remote_port_parent(endpoint);
+	of_node_put(endpoint);
 	if (!remote) {
 		dev_err(dev, "no valid remote node\n");
 		return -ENODEV;
@@ -320,12 +300,7 @@ int rk618_output_bind(struct rk618_output *output, struct drm_device *drm,
 
 	output->panel = of_drm_find_panel(output->panel_node);
 	if (!output->panel)
-		output->ext_bridge = of_drm_find_bridge(output->panel_node);
-
-	if (!output->panel && !output->ext_bridge) {
-		dev_info(dev, "Waiting for panel or bridge driver\n");
 		return -EPROBE_DEFER;
-	}
 
 	encoder->possible_crtcs = drm_of_find_possible_crtcs(drm,
 							     dev->of_node);
@@ -333,36 +308,15 @@ int rk618_output_bind(struct rk618_output *output, struct drm_device *drm,
 			 encoder_type, NULL);
 	drm_encoder_helper_add(encoder, &rk618_output_encoder_helper_funcs);
 
-	if (output->ext_bridge) {
-		output->ext_bridge->encoder = encoder;
-		ret = drm_bridge_attach(drm, output->ext_bridge);
-		if (ret) {
-			dev_err(dev, "failed to attach bridge\n");
-			return ret;
-		}
-		encoder->bridge = output->ext_bridge;
-	} else {
-		connector->port = dev->of_node;
-		ret = drm_connector_init(drm, connector,
-					 &rk618_output_connector_funcs,
-					 connector_type);
-		if (ret) {
-			dev_err(dev, "Failed to init connector with drm\n");
-			return ret;
-		}
+	connector->port = dev->of_node;
+	drm_connector_init(drm, connector, &rk618_output_connector_funcs,
+			   connector_type);
+	drm_connector_helper_add(connector,
+				 &rk618_output_connector_helper_funcs);
 
-		drm_connector_helper_add(connector,
-					 &rk618_output_connector_helper_funcs);
+	drm_mode_connector_attach_encoder(connector, encoder);
 
-		drm_mode_connector_attach_encoder(connector,
-						  output->bridge.encoder);
-
-		ret = drm_panel_attach(output->panel, connector);
-		if (ret) {
-			dev_err(dev, "Failed to attach panel\n");
-			return ret;
-		}
-	}
+	drm_panel_attach(output->panel, connector);
 
 	bridge->funcs = &rk618_output_bridge_funcs;
 	bridge->of_node = dev->of_node;

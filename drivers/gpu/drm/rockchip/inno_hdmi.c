@@ -30,7 +30,9 @@
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_edid.h>
-
+#ifdef CONFIG_SWITCH
+#include <linux/switch.h>
+#endif
 #include <sound/hdmi-codec.h>
 
 #include "rockchip_drm_drv.h"
@@ -108,6 +110,9 @@ struct inno_hdmi {
 	struct platform_device *audio_pdev;
 	bool audio_enable;
 
+	#ifdef CONFIG_SWITCH
+ 	struct switch_dev switchdev;
+	#endif
 	struct hdmi_data_info	hdmi_data;
 	struct drm_display_mode previous_mode;
 };
@@ -684,6 +689,17 @@ inno_hdmi_connector_detect(struct drm_connector *connector, bool force)
 {
 	struct inno_hdmi *hdmi = to_inno_hdmi(connector);
 
+	#ifdef CONFIG_SWITCH
+	 int status;
+	
+	 status = hdmi_readb(hdmi, HDMI_STATUS) & m_HOTPLUG;
+
+	 if (status)
+	 switch_set_state(&hdmi->switchdev, 1);
+	 else
+	 switch_set_state(&hdmi->switchdev, 0);
+	#endif
+
 	return (hdmi_readb(hdmi, HDMI_STATUS) & m_HOTPLUG) ?
 		connector_status_connected : connector_status_disconnected;
 }
@@ -691,12 +707,8 @@ inno_hdmi_connector_detect(struct drm_connector *connector, bool force)
 static int inno_hdmi_connector_get_modes(struct drm_connector *connector)
 {
 	struct inno_hdmi *hdmi = to_inno_hdmi(connector);
-	struct drm_display_mode *mode;
-	struct drm_display_info *info = &connector->display_info;
-	const u8 def_modes[6] = {4, 16, 31, 19, 17, 2};
 	struct edid *edid;
 	int ret = 0;
-	u8 i;
 
 	if (!hdmi->ddc)
 		return 0;
@@ -708,25 +720,6 @@ static int inno_hdmi_connector_get_modes(struct drm_connector *connector)
 		drm_mode_connector_update_edid_property(connector, edid);
 		ret = drm_add_edid_modes(connector, edid);
 		kfree(edid);
-	} else {
-		hdmi->hdmi_data.sink_is_hdmi = true;
-		hdmi->hdmi_data.sink_has_audio = true;
-		for (i = 0; i < sizeof(def_modes); i++) {
-			mode = drm_display_mode_from_vic_index(connector,
-							       def_modes,
-							       31, i);
-			if (mode) {
-				if (!i)
-					mode->type = DRM_MODE_TYPE_PREFERRED;
-				drm_mode_probed_add(connector, mode);
-				ret++;
-			}
-		}
-		info->edid_hdmi_dc_modes = 0;
-		info->hdmi.y420_dc_modes = 0;
-		info->color_formats = 0;
-
-		dev_info(hdmi->dev, "failed to get edid\n");
 	}
 
 	return ret;
@@ -1418,6 +1411,11 @@ static int inno_hdmi_bind(struct device *dev, struct device *master,
 	ret = inno_hdmi_register(drm, hdmi);
 	if (ret)
 		goto err_disable_pclk;
+	
+	#ifdef CONFIG_SWITCH
+	 hdmi->switchdev.name = "hdmi";
+	 switch_dev_register(&hdmi->switchdev);
+	#endif
 
 	dev_set_drvdata(dev, hdmi);
 
@@ -1457,6 +1455,10 @@ static void inno_hdmi_unbind(struct device *dev, struct device *master,
 			     void *data)
 {
 	struct inno_hdmi *hdmi = dev_get_drvdata(dev);
+
+	#ifdef CONFIG_SWITCH
+	 switch_dev_unregister(&hdmi->switchdev);
+	#endif
 
 	hdmi->connector.funcs->destroy(&hdmi->connector);
 	hdmi->encoder.funcs->destroy(&hdmi->encoder);
