@@ -1440,7 +1440,7 @@
 		sleep_exit_current = <300>;
 		power_off_thresd = <3400>;
 		chrg_diff_voltagemV = <0>;
-		virtual_power = <1>;
+		virtual_power = <0>;
 		support_usb_adp = <0>;
 		support_dc_adp = <1>;
 		power_dc2otg = <0>;

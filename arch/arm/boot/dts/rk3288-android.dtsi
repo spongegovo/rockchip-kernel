@@ -393,6 +393,10 @@
 	enable-method = "psci";
 };
 
+&cpu0_opp_table {
+	rockchip,avs-enable = <1>;
+};
+
 &cpu1 {
 	enable-method = "psci";
 };
