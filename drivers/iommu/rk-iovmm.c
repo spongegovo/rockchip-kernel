@@ -38,7 +38,6 @@ int rockchip_iovmm_invalidate_tlb(struct device *dev)
 
 	return ret;
 }
-EXPORT_SYMBOL(rockchip_iovmm_invalidate_tlb);
 
 void rockchip_iovmm_set_fault_handler(struct device *dev,
 				       rockchip_iommu_fault_handler_t handler)
@@ -47,7 +46,6 @@ void rockchip_iovmm_set_fault_handler(struct device *dev,
 
 	data->fault_handler = handler;
 }
-EXPORT_SYMBOL(rockchip_iovmm_set_fault_handler);
 
 int rockchip_iovmm_activate(struct device *dev)
 {
@@ -55,7 +53,6 @@ int rockchip_iovmm_activate(struct device *dev)
 
 	return iommu_attach_device(vmm->domain, dev);
 }
-EXPORT_SYMBOL(rockchip_iovmm_activate);
 
 void rockchip_iovmm_deactivate(struct device *dev)
 {
@@ -63,7 +60,6 @@ void rockchip_iovmm_deactivate(struct device *dev)
 
 	iommu_detach_device(vmm->domain, dev);
 }
-EXPORT_SYMBOL(rockchip_iovmm_deactivate);
 
 dma_addr_t rockchip_iovmm_map(struct device *dev,
 	struct scatterlist *sg, off_t offset, size_t size)

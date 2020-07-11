@@ -704,15 +704,15 @@ restore_voltage:
 EXPORT_SYMBOL_GPL(dev_pm_opp_set_rate);
 
 /**
- * dev_pm_opp_check_rate_volt() - Configure new OPP based on current rate
+ * dev_pm_opp_check_initial_rate() - Configure new OPP based on initial rate
  * @dev:	 device for which we do this operation
  *
  * This configures the power-supplies and clock source to the levels specified
- * by the OPP corresponding to current rate.
+ * by the OPP corresponding to the system initial rate.
  *
  * Locking: This function takes rcu_read_lock().
  */
-int dev_pm_opp_check_rate_volt(struct device *dev, bool force)
+int dev_pm_opp_check_initial_rate(struct device *dev, unsigned long *cur_freq)
 {
 	struct opp_table *opp_table;
 	struct dev_pm_opp *opp;
@@ -741,6 +741,7 @@ int dev_pm_opp_check_rate_volt(struct device *dev, bool force)
 	}
 
 	old_freq = clk_get_rate(clk);
+	*cur_freq = old_freq;
 	target_freq = old_freq;
 
 	opp = dev_pm_opp_find_freq_ceil(dev, &target_freq);
@@ -771,14 +772,11 @@ int dev_pm_opp_check_rate_volt(struct device *dev, bool force)
 		target_freq, u_volt);
 
 	if (old_freq == target_freq) {
-		if (old_volt != u_volt || force) {
-			ret = _set_opp_voltage(dev, reg, u_volt, u_volt_min,
-					u_volt_max);
-			if (ret) {
-				dev_err(dev, "failed to set volt %lu\n",
-					u_volt);
-				return ret;
-			}
+		ret = _set_opp_voltage(dev, reg, u_volt, u_volt_min,
+				       u_volt_max);
+		if (ret) {
+			dev_err(dev, "failed to set volt %lu\n", u_volt);
+			return ret;
 		}
 		return 0;
 	}
@@ -800,6 +798,8 @@ int dev_pm_opp_check_rate_volt(struct device *dev, bool force)
 		return ret;
 	}
 
+	*cur_freq = clk_get_rate(clk);
+
 	/* Scaling down? Scale voltage after frequency */
 	if (target_freq < old_freq) {
 		ret = _set_opp_voltage(dev, reg, u_volt, u_volt_min,
@@ -812,7 +812,7 @@ int dev_pm_opp_check_rate_volt(struct device *dev, bool force)
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(dev_pm_opp_check_rate_volt);
+EXPORT_SYMBOL_GPL(dev_pm_opp_check_initial_rate);
 
 /* OPP-dev Helpers */
 static void _kfree_opp_dev_rcu(struct rcu_head *head)
