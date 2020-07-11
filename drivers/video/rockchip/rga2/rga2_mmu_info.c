@@ -323,9 +323,6 @@ static int rga2_MapUserMemory(struct page **pages, uint32_t *pageTable,
 		for (i = 0; i < pageCount; i++) {
 			/* Get the physical address from page struct. */
 			pageTable[i] = page_to_phys(pages[i]);
-			/* ensure dst not flush null cache */
-			if (writeFlag && i >= pageCount - 2)
-				break;
 			rga_dma_flush_page(pages[i]);
 		}
 		for (i = 0; i < result; i++)
@@ -375,8 +372,6 @@ static int rga2_MapUserMemory(struct page **pages, uint32_t *pageTable,
 			   << PAGE_SHIFT)) & ~PAGE_MASK));
 		pte_unmap_unlock(pte, ptl);
 		pageTable[i] = (uint32_t)Address;
-		if ( writeFlag && (i >= pageCount - 2))
-			break;
 		rga_dma_flush_page(pfn_to_page(pfn));
 	}
 	up_read(&current->mm->mmap_sem);
@@ -473,8 +468,7 @@ static int rga2_mmu_info_BitBlt_mode(struct rga2_reg *reg, struct rga2_req *req)
 						 req->dst.vir_w,
 						 req->dst.vir_h,
 						 &DstStart);
-		/* if vir_address not 4k align need more page */
-		DstPageCount += 2;
+		DstPageCount = (DstPageCount + 3) & (~3);
 		if (DstPageCount == 0)
 			return -EINVAL;
 	}
