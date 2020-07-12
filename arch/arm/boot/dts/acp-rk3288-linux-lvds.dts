@@ -40,6 +40,7 @@
 
 /dts-v1/;
 #include "acp-rk3288.dtsi"
+#include "acp-linux.dtsi"
 
 &lvds {
 	status = "okay";
