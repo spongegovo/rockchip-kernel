@@ -41,10 +41,6 @@
 /dts-v1/;
 #include "acp-rk3288.dtsi"
 
-&route_lvds {
-	status = "okay";
-};
-
 &lvds {
 	status = "okay";
 };
